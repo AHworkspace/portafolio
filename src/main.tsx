@@ -12,7 +12,7 @@ type ProjectGroupItem = { id: number; name: string; image: string; style?: Proje
 type GroupWorkItem = { id: number; name: string; image: string };
 
 const tools = ['Python', 'Power BI', 'SQL', 'Figma', 'React', 'Tableau'];
-const projectGroups = ['Analisis de Datos y Business Intelligence', 'Sistemas de Informacion'];
+const projectGroups = ['Analisis de Datos y Business Intelligence', 'Sistemas de Informacion', 'Diseno Grafico y Animacion'];
 const groupWorks = ['Analisis de ventas y rentabilidad', 'Segmentacion de clientes'];
 const navItems: Array<{ view: SectionId; label: string }> = [
   { view: 'home', label: 'Inicio' },
@@ -399,6 +399,16 @@ function ProjectCards({ admin, onOpenProject }: { admin: boolean; onOpenProject:
   const [items, setItems] = usePersistentState<ProjectGroupItem[]>('portfolio.projectGroups', projectGroups.map((name, index) => ({ id: index + 1, name, image: '', style: inferGroupStyle({ name }) })));
   const normalizedItems = items
     .sort((first, second) => Number(isDataGroupName(second.name)) - Number(isDataGroupName(first.name)));
+
+  useEffect(() => {
+    const migrationKey = 'portfolio.defaultGroups.v2';
+    if (window.localStorage.getItem(migrationKey)) return;
+    const missingGroups = projectGroups
+      .filter((name) => !items.some((item) => item.name.toLowerCase() === name.toLowerCase()))
+      .map((name, index) => ({ id: Date.now() + index, name, image: '', style: inferGroupStyle({ name }) }));
+    if (missingGroups.length > 0) setItems((current) => [...current, ...missingGroups]);
+    window.localStorage.setItem(migrationKey, 'applied');
+  }, [items, setItems]);
 
   const addGroup = () => {
     const name = askText('Nombre del grupo de proyectos');
