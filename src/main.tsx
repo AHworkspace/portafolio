@@ -266,69 +266,70 @@ function Profile({ admin }: { admin: boolean }) {
     'Profesional multidisciplinario con experiencia en analisis de datos, desarrollo de sistemas de informacion y diseno UI/UX. Apasionado por transformar datos complejos en soluciones visuales y tecnicas de alto impacto.',
   );
   const [photo, setPhoto] = usePersistentState('portfolio.profile.photo', '');
-  const [cv, setCv] = usePersistentState<{ name: string; url: string } | null>('portfolio.profile.cv', null);
-  const uploadCv = (file: File | undefined) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setCv({ name: file.name, url: String(reader.result) });
-    reader.readAsDataURL(file);
-  };
+  const [cv, setCv] = useHydratedPersistentState<FileAsset | null>('portfolio.profile.cv', null);
+  const [cvViewerOpen, setCvViewerOpen] = useState(false);
 
   return (
-    <div className="profile-card">
-      <div className="avatar">
-        {photo ? <img src={photo} alt="Foto de perfil" /> : <span className="avatar-icon">ADM</span>}
-        <small>[FOTO]</small>
-        {admin && (
-          <label className="btn upload-button tiny">
-            subir
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => setPhoto(String(reader.result));
-                reader.readAsDataURL(file);
-              }}
-            />
-          </label>
-        )}
-      </div>
-      <div className="profile-info">
-        <h3>
-          <EditableText admin={admin} value={name} onChange={setName} />
-          <EditMark show={admin} />
-        </h3>
-        <p>
-          <EditableText admin={admin} value={bio} onChange={setBio} multiline />
-          <EditMark show={admin} />
-        </p>
-        <div className="profile-actions">
+    <>
+      <div className="profile-card">
+        <div className="avatar">
+          {photo ? <img src={photo} alt="Foto de perfil" /> : <span className="avatar-icon">ADM</span>}
+          <small>[FOTO]</small>
           {admin && (
-            <label className="btn upload-button">
-              subir curriculum
+            <label className="btn upload-button tiny">
+              subir
               <input
                 type="file"
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={(event) => uploadCv(event.target.files?.[0])}
+                accept="image/*"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => setPhoto(String(reader.result));
+                  reader.readAsDataURL(file);
+                }}
               />
             </label>
           )}
-          {cv ? (
-            <a className="btn" href={cv.url} target="_blank" rel="noreferrer">
-              ver curriculum vitae
-            </a>
-          ) : (
-            <button className="btn" disabled>
-              ver curriculum vitae
-            </button>
-          )}
-          {cv && <span className="file-name">{cv.name}</span>}
+        </div>
+        <div className="profile-info">
+          <h3>
+            <EditableText admin={admin} value={name} onChange={setName} />
+            <EditMark show={admin} />
+          </h3>
+          <p>
+            <EditableText admin={admin} value={bio} onChange={setBio} multiline />
+            <EditMark show={admin} />
+          </p>
+          <div className="profile-actions">
+            {admin && (
+              <FileUploadButton
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                label="subir curriculum"
+                onUpload={setCv}
+              />
+            )}
+            {cv ? (
+              <button className="btn" onClick={() => setCvViewerOpen(true)}>
+                ver curriculum vitae
+              </button>
+            ) : (
+              <button className="btn" disabled>
+                ver curriculum vitae
+              </button>
+            )}
+            {cv && <span className="file-name">{cv.name}</span>}
+          </div>
         </div>
       </div>
-    </div>
+      {cv && cvViewerOpen && (
+        <FileViewerModal
+          admin={admin}
+          file={cv}
+          onClose={() => setCvViewerOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
