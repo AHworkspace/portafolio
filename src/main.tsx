@@ -396,19 +396,19 @@ function ToolsSection({ admin, boxed = true }: { admin: boolean; boxed?: boolean
 }
 
 function ProjectCards({ admin, onOpenProject }: { admin: boolean; onOpenProject: (group: ProjectGroupItem) => void }) {
-  const [items, setItems] = usePersistentState<ProjectGroupItem[]>('portfolio.projectGroups', projectGroups.map((name, index) => ({ id: index + 1, name, image: '', style: inferGroupStyle({ name }) })));
+  const [items, setItems, groupsReady] = usePersistentState<ProjectGroupItem[]>('portfolio.projectGroups', projectGroups.map((name, index) => ({ id: index + 1, name, image: '', style: inferGroupStyle({ name }) })));
+  const [defaultGroupsVersion, setDefaultGroupsVersion, versionReady] = usePersistentState('portfolio.defaultGroups.version', '');
   const normalizedItems = items
     .sort((first, second) => Number(isDataGroupName(second.name)) - Number(isDataGroupName(first.name)));
 
   useEffect(() => {
-    const migrationKey = 'portfolio.defaultGroups.v2';
-    if (window.localStorage.getItem(migrationKey)) return;
+    if (!groupsReady || !versionReady || defaultGroupsVersion === 'v3') return;
     const missingGroups = projectGroups
       .filter((name) => !items.some((item) => item.name.toLowerCase() === name.toLowerCase()))
       .map((name, index) => ({ id: Date.now() + index, name, image: '', style: inferGroupStyle({ name }) }));
     if (missingGroups.length > 0) setItems((current) => [...current, ...missingGroups]);
-    window.localStorage.setItem(migrationKey, 'applied');
-  }, [items, setItems]);
+    setDefaultGroupsVersion('v3');
+  }, [defaultGroupsVersion, groupsReady, items, setDefaultGroupsVersion, setItems, versionReady]);
 
   const addGroup = () => {
     const name = askText('Nombre del grupo de proyectos');
@@ -1126,7 +1126,7 @@ function usePersistentState<T>(key: string, initialValue: T) {
     saveRemoteState(key, value);
   }, [key, remoteReady, value]);
 
-  return [value, setValue] as const;
+  return [value, setValue, remoteReady] as const;
 }
 
 function useHydratedPersistentState<T>(key: string, initialValue: T) {
